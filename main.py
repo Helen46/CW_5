@@ -48,3 +48,32 @@ class DBManager:
         """)
 
         return cur.fetchall()
+
+    def get_vacancies_with_higher_salary(self):
+        """
+        получает список всех вакансий, у которых зарплата выше средней по всем вакансиям.
+        :return:
+        """
+        cur = self.conn.cursor()
+        cur.execute("""
+            SELECT *
+            FROM vacancies
+            WHERE salary_from > (SELECT AVG(DISTINCT salary_from) FROM vacancies) or
+            salary_to >(SELECT AVG(DISTINCT salary_to) FROM vacancies)
+        """)
+
+        return cur.fetchall()
+
+    def get_vacancies_with_keyword(self, keyword):
+        """
+        получает список всех вакансий, в названии которых содержатся переданные в метод слова
+        :return:
+        """
+        cur = self.conn.cursor()
+        cur.execute(f"""
+            SELECT *
+            FROM vacancies
+            WHERE name LIKE '%{keyword}%'
+        """)
+
+        return cur.fetchall()
