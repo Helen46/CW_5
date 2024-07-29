@@ -19,3 +19,32 @@ class DBManager:
         """)
 
         return cur.fetchall()
+
+    def get_all_vacancies(self):
+        """
+        получает список всех вакансий с указанием названия компании,
+        названия вакансии и зарплаты и ссылки на вакансию
+        :return:
+        """
+        cur = self.conn.cursor()
+        cur.execute("""
+            SELECT c.name, v.name, v.salary_from, v.salary_to, v.url
+            FROM vacancies as v
+            JOIN companies as c ON v.company_id = c.id
+        """)
+
+        return cur.fetchall()
+
+    def get_avg_salary(self):
+        """
+        получает среднюю зарплату по вакансиям
+        :return:
+        """
+        cur = self.conn.cursor()
+        cur.execute("""
+            SELECT (AVG(DISTINCT v.salary_from) + AVG(DISTINCT v.salary_to)) / 2
+            FROM vacancies as v
+            WHERE v.salary_from > 0 AND v.salary_to > 0
+        """)
+
+        return cur.fetchall()
