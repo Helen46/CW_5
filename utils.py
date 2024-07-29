@@ -1,3 +1,5 @@
+from typing import Any
+
 import psycopg2
 
 
@@ -40,3 +42,43 @@ def create_database(database_name: str, params: dict) -> None:
         """)
     conn.commit()
     conn.close()
+
+
+def save_data_to_database(data: list[dict[str, Any]], database_name: str, params: dict) -> None:
+    """Сщхранение данных о работадателях и ваканискиях в базу данных"""
+    conn = psycopg2.connect(dbname=database_name, **params)
+
+    with conn.cursor() as cur:
+        for employer in data:
+            employer_data = employer['employer']
+            cur.execute(
+                """
+                INSERT INTO companies (name, city, website, description, open_vacancies)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (employer_data['name'], employer_data['area']['name'], employer_data['area']['url'],
+                 employer_data['description'], employer_data['open_vacancies'])
+            )
+            id_ = cur.fetchone()[0]
+            vacancies_data = employer['vacancies']
+            for vacancy_data in vacancies_data:
+                salary = vacancy_data.get("salary")
+                salary_from = 0
+                salary_to = 0
+                salary_currency = None
+                if salary:
+                    salary_from = salary.get("from", 0) if salary.get("from") is not None else 0
+                    salary_to = salary.get("to", 0) if salary.get("to") is not None else 0
+                    salary_currency = salary.get("currency")
+                cur.execute(
+                    """
+                    INSERT INTO vacancies (name, company_id, salary_from, salary_to, currency, url)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (vacancy_data['name'], id_, salary_from,
+                     salary_to, salary_currency, vacancy_data['alternate_url'])
+                )
+
+        conn.commit()
+        conn.close()
